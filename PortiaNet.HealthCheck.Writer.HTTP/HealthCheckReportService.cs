@@ -1,5 +1,6 @@
 ﻿using PortiaNet.HealthCheck.Reporter;
 using PortiaNet.HealthCheck.Writer.HTTP.Authentication;
+using System.Diagnostics;
 using System.Text.Json;
 
 namespace PortiaNet.HealthCheck.Writer.HTTP
@@ -9,10 +10,12 @@ namespace PortiaNet.HealthCheck.Writer.HTTP
         private readonly HTTPWriterConfiguration _config;
         private HttpClient? _httpClient;
         private bool _clientConfigMethodHasCalled = false;
+        private readonly Queue<RequestDetail> _dumpingQueue = new();
 
         public HealthCheckReportService(HTTPWriterConfiguration config)
         {
             _config = config;
+            _config.DataDumpingSize = Math.Max(1, _config.DataDumpingSize);
         }
 
         private void ConfigureHttpClient()
@@ -38,24 +41,30 @@ namespace PortiaNet.HealthCheck.Writer.HTTP
             _httpClient.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
         }
 
-        public async Task SaveAPICallInformationAsync(RequestDetail requestDetail)
+        public Task SaveAPICallInformationAsync(RequestDetail requestDetail)
         {
             if (_httpClient == null)
             {
                 if (_clientConfigMethodHasCalled)
-                    return;
+                    return Task.CompletedTask;
 
                 try
                 {
                     ConfigureHttpClient();
                 }
-                catch
+                catch (Exception ex)
                 {
+                    Debugger.Log(0, "HTTP Writer", Environment.NewLine);
+                    Debugger.Log(0, "HTTP Writer", $"Authentication Error :: {ex.Message}");
+                    Debugger.Log(0, "HTTP Writer", Environment.NewLine);
+                    Debugger.Log(0, "HTTP Writer", ex.StackTrace);
+                    Debugger.Log(0, "HTTP Writer", Environment.NewLine);
+
                     _httpClient = null;
                     if (!_config.MuteOnError)
                         throw;
 
-                    return;
+                    return Task.CompletedTask;
                 }
                 finally
                 {
@@ -66,19 +75,50 @@ namespace PortiaNet.HealthCheck.Writer.HTTP
             try
             {
                 requestDetail.NodeName = _config.NodeName;
-                var result = await _httpClient.PostAsync(_config.ListenerAddress,
-                    new StringContent(JsonSerializer.Serialize(requestDetail), System.Text.Encoding.UTF8, "application/json"));
 
-                if (!result.IsSuccessStatusCode)
-                    throw new AuthenticationFailedException($"Report failed to be sent to the listener with HTTP code {result.StatusCode}.");
+                if (_config.BulkDataDumpingEnabled)
+                {
+                    _dumpingQueue.Enqueue(requestDetail);
+                    if (_dumpingQueue.Count >= _config.DataDumpingSize)
+                    {
+                        var itemsToSend = new List<RequestDetail>();
+                        var index = 0;
+                        while (index < _config.DataDumpingSize && _dumpingQueue.Count > 0)
+                        {
+                            itemsToSend.Add(_dumpingQueue.Dequeue());
+                            index++;
+                        }
+
+                        return PostInformation(JsonSerializer.Serialize(itemsToSend));
+                    }
+
+                    return Task.CompletedTask;
+                }
+                else
+                    return PostInformation(JsonSerializer.Serialize(requestDetail));
             }
-            catch
+            catch (Exception ex)
             {
-                if(!_config.MuteOnError)
+                Debugger.Log(0, "HTTP Writer", Environment.NewLine);
+                Debugger.Log(0, "HTTP Writer", $"Error :: {ex.Message}");
+                Debugger.Log(0, "HTTP Writer", Environment.NewLine);
+                Debugger.Log(0, "HTTP Writer", ex.StackTrace);
+                Debugger.Log(0, "HTTP Writer", Environment.NewLine);
+
+                if (!_config.MuteOnError)
                     throw;
                 else
-                    return;
+                    return Task.CompletedTask;
             }
+        }
+
+        private async Task PostInformation(string jsonifiedContent)
+        {
+            var result = await _httpClient.PostAsync(_config.ListenerAddress,
+                    new StringContent(jsonifiedContent, System.Text.Encoding.UTF8, "application/json"));
+
+            if (!result.IsSuccessStatusCode)
+                throw new AuthenticationFailedException($"Report failed to be sent to the listener with HTTP code {result.StatusCode}.");
         }
     }
 }

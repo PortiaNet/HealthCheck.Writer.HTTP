@@ -149,3 +149,27 @@ public IActionResult SaveReport([FromBody] RequestDetail report)
     return Ok();
 }
 ```
+
+There is an option in the configuration to dump a set of logs instead of sending them one by one. To use this functionality, you need to set the **BulkDataDumpingEnabled** to *true*. Then the report writer will create a set of records based on the limitation has been set by **DataDumpingSize** and sends it in one package. In this case, the target API should receive a set of _RequestDetail_ instead of an individual item.
+The following sample shows the configuration for the bulk data dumping:
+``` c#
+builder.Services.AddHTTPWriter(options =>
+{
+    options.ListenerAddress = new Uri("Target API to push the report");
+    options.MuteOnError = false;
+    options.AuthenticationType = AuthenticationType.None;
+    options.NodeName = "Main Node Bulk Reprot";
+    options.BulkDataDumpingEnabled = true;
+    options.DataDumpingSize = 100;
+});
+```
+
+And the following sample shows an instance of the report listener:
+``` c#
+[HttpPost]
+public IActionResult SaveBulkReport([FromBody] List<RequestDetail> report)
+{
+    Debugger.Log(0, null, JsonSerializer.Serialize(report));
+    return Ok();
+}
+```

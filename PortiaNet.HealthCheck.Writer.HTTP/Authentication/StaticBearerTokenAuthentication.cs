@@ -6,10 +6,10 @@
 
         internal override Task SetAuthorizationHeader(HttpClient client)
         {
-            if(string.IsNullOrEmpty(Token))
+            if (string.IsNullOrEmpty(Token))
                 throw new InvalidDataException("Token property cannot be null.");
 
-            if(client == null)
+            if (client == null)
                 throw new ArgumentNullException(nameof(client));
 
             client.DefaultRequestHeaders.Authorization =

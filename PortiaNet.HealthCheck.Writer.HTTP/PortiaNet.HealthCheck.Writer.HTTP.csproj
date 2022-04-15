@@ -5,7 +5,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<Version>1.0.0</Version>
+		<Version>1.0.1</Version>
 		<Authors>Amin Esmaeily</Authors>
 		<PackageProjectUrl>https://github.com/PortiaNet/HealthCheck.Writer.HTTP</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/PortiaNet/HealthCheck.Writer.HTTP</RepositoryUrl>
