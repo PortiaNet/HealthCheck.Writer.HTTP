@@ -11,6 +11,7 @@ namespace PortiaNet.HealthCheck.Writer.HTTP
         private HttpClient? _httpClient;
         private bool _clientConfigMethodHasCalled = false;
         private readonly Queue<RequestDetail> _dumpingQueue = new();
+        private System.Timers.Timer? _timer;
 
         public HealthCheckReportService(HTTPWriterConfiguration config)
         {
@@ -51,6 +52,32 @@ namespace PortiaNet.HealthCheck.Writer.HTTP
                 try
                 {
                     ConfigureHttpClient();
+                    if (_timer == null)
+                    {
+                        _timer = new System.Timers.Timer(30000);
+                        _timer.Elapsed += async (sender, args) =>
+                        {
+                            if (_dumpingQueue.Count > 0)
+                            {
+                                try
+                                {
+                                    await DumpData();
+                                }
+                                catch(Exception ex)
+                                {
+                                    Debugger.Log(0, "HTTP Writer", Environment.NewLine);
+                                    Debugger.Log(0, "HTTP Writer", $"Data Dumping Error :: {ex.Message}");
+                                    Debugger.Log(0, "HTTP Writer", Environment.NewLine);
+                                    Debugger.Log(0, "HTTP Writer", ex.StackTrace);
+                                    Debugger.Log(0, "HTTP Writer", Environment.NewLine);
+                                    if (!_config.MuteOnError)
+                                        throw;
+                                }
+                            }
+                        };
+                        _timer.AutoReset = true;
+                        _timer.Enabled = true;
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -81,15 +108,7 @@ namespace PortiaNet.HealthCheck.Writer.HTTP
                     _dumpingQueue.Enqueue(requestDetail);
                     if (_dumpingQueue.Count >= _config.DataDumpingSize)
                     {
-                        var itemsToSend = new List<RequestDetail>();
-                        var index = 0;
-                        while (index < _config.DataDumpingSize && _dumpingQueue.Count > 0)
-                        {
-                            itemsToSend.Add(_dumpingQueue.Dequeue());
-                            index++;
-                        }
-
-                        return PostInformation(JsonSerializer.Serialize(itemsToSend));
+                        return DumpData();
                     }
 
                     return Task.CompletedTask;
@@ -112,13 +131,41 @@ namespace PortiaNet.HealthCheck.Writer.HTTP
             }
         }
 
+        private Task DumpData()
+        {
+            var itemsToSend = new List<RequestDetail>();
+            var index = 0;
+            while (index < _config.DataDumpingSize && _dumpingQueue.Count > 0)
+            {
+                itemsToSend.Add(_dumpingQueue.Dequeue());
+                index++;
+            }
+
+            return PostInformation(JsonSerializer.Serialize(itemsToSend));
+        }
+
         private async Task PostInformation(string jsonifiedContent)
         {
+            if(_httpClient == null)
+            {
+                Debugger.Log(0, "HTTP Writer", Environment.NewLine);
+                Debugger.Log(0, "HTTP Writer", "HTTP Client element is null");
+                Debugger.Log(0, "HTTP Writer", Environment.NewLine);
+                return;
+            }
+
             var result = await _httpClient.PostAsync(_config.ListenerAddress,
                     new StringContent(jsonifiedContent, System.Text.Encoding.UTF8, "application/json"));
 
             if (!result.IsSuccessStatusCode)
                 throw new AuthenticationFailedException($"Report failed to be sent to the listener with HTTP code {result.StatusCode}.");
+        }
+
+        ~HealthCheckReportService()
+        {
+            _httpClient?.Dispose();
+            _timer?.Stop();
+            _timer?.Dispose();
         }
     }
 }
