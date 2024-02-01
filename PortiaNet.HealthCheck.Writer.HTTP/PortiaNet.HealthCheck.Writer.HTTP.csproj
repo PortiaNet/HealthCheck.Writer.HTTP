@@ -1,38 +1,33 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
-	<PropertyGroup>
-		<TargetFramework>net6.0</TargetFramework>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>enable</Nullable>
-		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<Version>1.2.0</Version>
-		<Authors>Amin Esmaeily</Authors>
-		<PackageProjectUrl>https://github.com/PortiaNet/HealthCheck.Writer.HTTP</PackageProjectUrl>
-		<RepositoryUrl>https://github.com/PortiaNet/HealthCheck.Writer.HTTP</RepositoryUrl>
-		<PackageTags>.Net; HealthCheck; Watchdog; Monitoring; Performance Monitoring; HTTP</PackageTags>
-		<Copyright>Copyright 2022 - Amin Esmaeily</Copyright>
-		<PackageReadmeFile>README.MD</PackageReadmeFile>
-		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-		<Description>This package is the writer for PortiaNet.HealthCheck.Reporter library that sends the reports to the REST APIs to be saved in another system.</Description>
-	</PropertyGroup>
-
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Version>1.3.0</Version>
+    <Authors>Amin Esmaeily</Authors>
+    <PackageProjectUrl>https://github.com/PortiaNet/HealthCheck.Writer.HTTP</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/PortiaNet/HealthCheck.Writer.HTTP</RepositoryUrl>
+    <PackageTags>.Net; HealthCheck; Watchdog; Monitoring; Performance Monitoring; HTTP</PackageTags>
+    <Copyright>Copyright 2024 - Amin Esmaeily</Copyright>
+    <PackageReadmeFile>README.MD</PackageReadmeFile>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <Description>This package is the writer for PortiaNet.HealthCheck.Reporter library that sends the reports to the REST APIs to be saved in another system.</Description>
+  </PropertyGroup>
   <ItemGroup>
     <Content Remove="C:\Users\Amin\.nuget\packages\portianet.healthcheck.reporter\1.0.1\contentFiles\any\net6.0\logo-128.png" />
     <Content Remove="C:\Users\Amin\.nuget\packages\portianet.healthcheck.reporter\1.0.2\contentFiles\any\net6.0\logo-128.png" />
     <Content Remove="C:\Users\Amin\.nuget\packages\portianet.healthcheck.reporter\1.0.4\contentFiles\any\net6.0\logo-128.png" />
   </ItemGroup>
-
   <ItemGroup>
-	  <None Include="..\README.MD">
-		  <Pack>True</Pack>
-		  <Visible>False</Visible>
-		  <PackagePath>\</PackagePath>
-	  </None>
+    <None Include="..\README.MD">
+      <Pack>True</Pack>
+      <Visible>False</Visible>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
-
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" />
-    <PackageReference Include="PortiaNet.HealthCheck.Reporter" Version="1.2.0" />
+    <PackageReference Include="PortiaNet.HealthCheck.Reporter" Version="1.3.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
   </ItemGroup>
-
 </Project>
